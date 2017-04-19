@@ -2,19 +2,33 @@ import java.util.*;
 import java.io.*;
 import java.math.*;
 
+/**
+ * Auto-generated code below aims at helping you parse
+ * the standard input according to the problem statement.
+ **/
 class Player { 
-	static final int nextOddX[] ={
-		1,1,0,-1,0,1
-	};
-	static final int nextOddY[] ={
-		0,-1,-1,0,1,1
-	};
-	static final int nextEvenX[] ={
+	static final int next1EvenX[] ={
 		1,0,-1,-1,-1,0
 	};
-	static final int nextEvenY[] ={
+	static final int next1EvenY[] ={
 		0,-1,-1,0,1,1
 	};
+	static final int next1OddX[] ={
+		1,1,0,-1,0,1
+	};
+	static final int next1OddY[] ={
+		0,-1,-1,0,1,1
+	};
+	
+	static int[][] nextEvenX = new int[10][6];
+	static int[][] nextEvenY = new int[10][6];
+	static int[][] nextOddX = new int[10][6];
+	static int[][] nextOddY = new int[10][6];
+	
+	static
+	{
+		initNeighboursGrids();
+	}
 	
     static final String SHIP = "SHIP";
     static final String BARREL = "BARREL";
@@ -33,9 +47,29 @@ class Player {
     static final int SHIP_WIDTH = 1;
     static final int SHIP_LENGTH = 3;
     static final int SHIP_MAX_RHUM = 100;
+    static final int SHIP_MAX_SPEED = 2;
     static final int MIN_RHUM = 10;
     static final int MAX_RHUM = 20;
 
+    public static void initNeighboursGrids()
+    {
+    	for (int i=0;i<10;i++)
+		{
+			for (int j=i;j<10;j++)
+			{
+				for (int z=0;z<6;z++)
+				{
+					nextEvenX[j][z] += (j-i)%2 == 0 ? next1OddX[z] : next1EvenX[z];
+					nextEvenY[j][z] += (j-i)%2 == 0 ? next1OddY[z] : next1EvenY[z];
+					nextOddX[j][z] += (j-i)%2 == 0 ? next1OddX[z] : next1EvenX[z];
+					nextOddY[j][z] += (j-i)%2 == 0 ? next1OddY[z] : next1EvenY[z];
+				}
+				
+			}
+		}
+    //System.err.println(Arrays.deepToString(nextOddX));
+    }
+    
     public static void main(String args[]) {
         Map oldMap = new Map();
         oldMap.initTree();
@@ -48,6 +82,7 @@ class Player {
             Map newMap = new Map(oldMap);
             int myShipCount = initTurn(in, newMap);
             playTurnForAll(newMap);
+            //System.out.println("MOVE 10 10");
             oldMap = newMap;
         }
     }
@@ -209,7 +244,9 @@ class Map{
     	if(result != null)
     	{
     		result.coord.print();
-    		return new TargetCoord(result.coord, result.id, diff);
+    		TargetCoord target = new TargetCoord(result.coord, result.id, diff);
+    		ship.currentTarget = target;
+    		return target;
     	}
     	else
     	{
@@ -279,8 +316,8 @@ class Coord{
 		
 		if (isEven)
 		{
-			int predictionX = x + Player.nextEvenX[orientation];
-			int predictionY = y + Player.nextEvenY[orientation];
+			int predictionX = x + Player.nextEvenX[speed+1][orientation];
+			int predictionY = y + Player.nextEvenY[speed+1][orientation];
 			if (isXout(predictionX) || isXout(predictionY))
 			{
 				this.x = x;
@@ -294,8 +331,8 @@ class Coord{
 		}
 		else
 		{
-			int predictionX = x + Player.nextOddX[orientation];
-			int predictionY = y + Player.nextOddY[orientation];
+			int predictionX = x + Player.nextOddX[speed+1][orientation];
+			int predictionY = y + Player.nextOddY[speed+1][orientation];
 			if (isXout(predictionX) || isXout(predictionY))
 			{
 				this.x = x;
@@ -416,14 +453,14 @@ class Mine extends Entity{
 }
 
 enum BASE{
-    MOVE, FIRE, MINE, SLOWER, WAIT
+    MOVE, FIRE, MINE, PORT, STARBOARD, FASTER, SLOWER, WAIT
 }
 
 class Action
 {
     BASE base;
-    int x = -1;
-    int y = -1;
+    int x = 0;
+    int y = 0;
     Action(BASE base){
     	this.base = base;
     }
@@ -444,6 +481,12 @@ class Action
                 return "FIRE " + x + " " + y;
             case MINE:
                 return "MINE";
+            case PORT:
+                return "PORT";   
+             case STARBOARD:
+                return "STARBOARD";   
+             case FASTER:
+                return "FASTER";       
             case SLOWER:
                 return "SLOWER";
             case WAIT:
